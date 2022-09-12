@@ -24,6 +24,13 @@ async def ping(ctx: lightbulb.Context) -> None:
 async def say(ctx: lightbulb.Context) -> None:
     await ctx.respond(ctx.options.text)
 
+@bot.command()
+@lightbulb.option("text", "The thing to say.")
+@lightbulb.command("echo", "Make the bot say something.")
+@lightbulb.implements(lightbulb.PrefixCommand)
+async def echo(ctx: lightbulb.PrefixContext) -> None:
+    await ctx.respond(ctx.options.text)
+
 def run() -> None:
     if os.name != "nt":
         import uvloop
