@@ -137,8 +137,47 @@ class Canvassing(commands.Cog):
         await ctx.send("You are now registered!")
 
     @commands.command()
+    async def checker(self, ctx, *, member: discord.Member):
+        checker = Checker.get_by_id(member.id)
+
+        if not checker:
+            await ctx.send("Error, user is not a registered checker.")
+
+        embed = discord.Embed(
+            colour = discord.Color.gold(),
+            title = "Checker Information",
+            description = None
+        )
+
+        embed.add_field(
+            name = "ID",
+            value = checker.get_id(),
+            inline = False
+        )
+
+        embed.add_field(
+            name = "Lastname, Firstname",
+            value = f"{checker.get_lastname()}, {checker.get_firstname()}",
+            inline = False
+        )
+
+        embed.add_field(
+            name = "Email",
+            value = checker.get_email(),
+            inline = False
+        )
+
+        embed.add_field(
+            name = "Discord User",
+            value = ctx.guild.get_member(checker.get_discord_id()).mention,
+            inline = False
+        )
+
+        await ctx.send(embed=embed)
+
+    @commands.command()
     async def checkers(self, ctx):
-        users = Checker.get_checkers()
+        checkers = Checker.get_all()
 
         embed = discord.Embed(
             colour = discord.Color.gold(),
@@ -148,7 +187,7 @@ class Canvassing(commands.Cog):
 
         embed.add_field(
             name = "ID, Lastname, Firstname, Email",
-            value = "".join([f"`{user[0]}` {user[3]}, {user[2]}; {user[4]}\n" for user in users])
+            value = "".join([f"`{checker.get_id()}` {checker.get_lastname()}, {checker.get_firstname()}; {checker.get_email()}\n" for checker in checkers]) if checkers else None
         )
 
         await ctx.send(embed=embed)
@@ -264,7 +303,8 @@ class Canvassing(commands.Cog):
 
     @commands.command()
     async def updatechecker(self, ctx, field, *, value):
-        if not Checker.get_checker_by_id(ctx.author.id):
+        checker = Checker.get_by_id(ctx.author.id)
+        if not checker:
             await ctx.send("Error, you must be a checker to do this.")
             return
 
@@ -273,7 +313,12 @@ class Canvassing(commands.Cog):
             await ctx.send("Error, invalid field.")
             return
 
-        Checker.update(ctx.author.id, field, value)
+        if field == 'firstname':
+            checker = checker.set_firstname(value)
+        elif field == 'lastname':
+            checker = checker.set_lastname(value)
+        elif field == 'email':
+            checker = checker.set_email(value)
 
         await ctx.send(f"Updated {field} to {value}.")
 

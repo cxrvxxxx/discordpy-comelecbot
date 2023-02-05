@@ -17,41 +17,77 @@ conn.close()
 
 class Checker:
     def __init__(self, id: int, discord_id: int, firstname: str, lastname: str, email: str):
-        self.id = id
-        self.discord_id = discord_id
-        self.firstname = firstname
-        self.lastname = lastname
-        self.email = email
+        self.__id = id
+        self.__discord_id = discord_id
+        self.__firstname = firstname
+        self.__lastname = lastname
+        self.__email = email
 
-    @staticmethod
-    def check_exists(discord_id: int):
-        conn = sql.connect(db_path)
-        c = conn.cursor()
-
-        c.execute("SELECT * FROM checker WHERE discord_id=?", (discord_id,))
-        data = c.fetchone()
-
-        conn.close()
-
-        if data: return True
-        return False
+    def get_id(self):
+        return self.__id
     
-    @staticmethod
-    def get_checkers():
+    def get_discord_id(self):
+        return self.__discord_id
+    
+    def get_firstname(self):
+        return self.__firstname
+    
+    def get_lastname(self):
+        return self.__lastname
+    
+    def get_email(self):
+        return self.__email
+    
+    def set_firstname(self, firstname):
+        self.__firstname = firstname
+        self.update()
+
+    def set_lastname(self, lastname):
+        self.__lastname = lastname
+        self.update()
+
+    def set_email(self, email):
+        self.__email = email
+        self.update()
+
+    @classmethod
+    def get_by_id(cls, discord_id):
         conn = sql.connect(db_path)
         c = conn.cursor()
 
-        c.execute("SELECT * FROM checker ORDER BY id ASC")
-        data = c.fetchall()
+        c.execute("""
+            SELECT * FROM checker
+            WHERE discord_id=?""",
+            (discord_id,)
+        )
+
+        fields = c.fetchone()
+
+        checker = cls(*fields) if fields else None
 
         conn.close()
 
-        return data
+        return checker
+
+    @classmethod
+    def get_all(cls):
+        conn = sql.connect(db_path)
+        c = conn.cursor()
+
+        c.execute("SELECT * FROM checker")
+        fields = c.fetchall()
+
+        checkers = []
+        for row in fields:
+            checkers.append(cls(*row))
+
+        return checkers
     
     @classmethod
-    def create(cls, discord_id: int, firstname: str, lastname:str, email: str):
-        if cls.check_exists(discord_id): return
-
+    def create(cls, discord_id, firstname, lastname, email):
+        if cls.get_by_id(discord_id):
+            return
+        
         conn = sql.connect(db_path)
         c = conn.cursor()
 
@@ -60,61 +96,56 @@ class Checker:
             VALUES (:discord_id, :firstname, :lastname, :email)""",
             {
                 "discord_id": discord_id,
-                "firstname" : firstname,
+                "firstname": firstname,
                 "lastname": lastname,
                 "email": email
             }
         )
+
         conn.commit()
+        conn.close()
+
+        return cls.get_by_id(discord_id)
+
+    def update(self):
+        if not self.get_by_id(self.__discord_id):
+            return
+        
+        conn = sql.connect(db_path)
+        c = conn.cursor()
+
         c.execute("""
-            SELECT * FROM checker
-            WHERE discord_id=?""",
-            (
-                discord_id,
-            )
+            UPDATE checker
+            SET
+                firstname=:firstname,
+                lastname=:lastname,
+                email=:email
+            WHERE id=:id""",
+            {
+                "firstname": self.__firstname,
+                "lastname": self.__lastname,
+                "email": self.__email,
+                "id": self.__id
+            }
         )
 
-        checker = cls(*c.fetchone())
+        conn.commit()
         conn.close()
 
-        return checker
+        return self.get_by_id(self.__discord_id)
 
-    @staticmethod
-    def is_checker(discord_id: int):
+    def delete(self):
+        if not self.get_by_id(self.__discord_id):
+            return
+        
         conn = sql.connect(db_path)
         c = conn.cursor()
 
-        c.execute("SELECT * FROM checker WHERE discord_id=?", (discord_id,))
-        data = c.fetchone()
-
-        conn.close()
-
-        if not data: return False
-        return True
-
-    @classmethod
-    def get_checker_by_id(cls, discord_id):
-        conn = sql.connect(db_path)
-        c = conn.cursor()
-
-        c.execute("SELECT * FROM checker WHERE discord_id=?", (discord_id,))
-        fields = c.fetchone()
-
-        if fields: return cls(*fields)
-
-    @classmethod
-    def update(cls, discord_id, field, value):
-        conn = sql.connect(db_path)
-        c = conn.cursor()
-
-        c.execute(f"""
-            UPDATE checker
-            SET {field}=:value
-            WHERE discord_id=:discord_id""",
-            {
-                "discord_id": discord_id,
-                "value": value
-            }
+        c.execute("""
+            DELETE FROM checker
+            WHERE
+                id=?""",
+            (self.__id,)
         )
 
         conn.commit()
