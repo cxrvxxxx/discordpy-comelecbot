@@ -25,8 +25,41 @@ class Vote:
         self.__is_valid = is_valid
         self.__reason = reason
 
+    def get_id(self):
+        return self.__id
+
+    def get_vote_id(self):
+        return self.__vote_id
+
+    def get_checker_id(self):
+        return self.__checker_id
+
+    def get_is_valid(self):
+        return self.__is_valid
+
+    def get_reason(self):
+        return self.__reason
+
     @classmethod
-    def get_by_id(cls, vote_id):
+    def get_by_id(cls, id):
+        conn = sql.connect(db_path)
+        c = conn.cursor()
+
+        c.execute("""
+            SELECT * FROM vote
+            WHERE
+                id=?""",
+            (id,)
+        )
+
+        fields = c.fetchone()
+        conn.close()
+
+        if fields:
+            return cls(*fields)
+
+    @classmethod
+    def get_by_vote_id(cls, vote_id):
         conn = sql.connect(db_path)
         c = conn.cursor()
 
@@ -38,7 +71,6 @@ class Vote:
         )
 
         fields = c.fetchone()
-
         conn.close()
 
         if fields:
@@ -141,86 +173,102 @@ class Vote:
 
         return self.get_by_id(self.__vote_id)
 
-    @staticmethod
-    def check_exists(vote_id):
-        conn = sql.connect(db_path)
-        c = conn.cursor()
+    def delete(self):
+        if not self.get_by_id(self.__vote_id):
+            return
 
-        c.execute("SELECT * FROM vote WHERE vote_id=?", (vote_id,))
-        fields = c.fetchone()
-
-        conn.close()
-
-        if not fields: return False
-        return True
-
-    def save(self):
         conn = sql.connect(db_path)
         c = conn.cursor()
 
         c.execute("""
-            INSERT INTO vote (vote_id, checker_id, is_valid, reason)
-            VALUES (:vote_id, :checker_id, :is_valid, :reason)""",
-            {
-                "vote_id": self.vote_id,
-                "checker_id": self.checker_id,
-                "is_valid": self.is_valid,
-                "reason": self.reason
-            }
+            DELETE FROM vote
+            WHERE id=?""",
+            (self.__id,)
         )
 
         conn.commit()
         conn.close()
 
-    @staticmethod
-    def fetch_valid_votes():
-        conn = sql.connect(db_path)
-        c = conn.cursor()
+    # @staticmethod
+    # def check_exists(vote_id):
+    #     conn = sql.connect(db_path)
+    #     c = conn.cursor()
 
-        c.execute("""
-            SELECT vote.vote_id, checker.lastname || ', ' || checker.firstname AS name
-            FROM vote
-            INNER JOIN checker
-            ON vote.checker_id = checker.id
-            WHERE is_valid=1
-        """)
+    #     c.execute("SELECT * FROM vote WHERE vote_id=?", (vote_id,))
+    #     fields = c.fetchone()
 
-        fields = c.fetchall()
+    #     conn.close()
 
-        return fields
+    #     if not fields: return False
+    #     return True
+
+    # def save(self):
+    #     conn = sql.connect(db_path)
+    #     c = conn.cursor()
+
+    #     c.execute("""
+    #         INSERT INTO vote (vote_id, checker_id, is_valid, reason)
+    #         VALUES (:vote_id, :checker_id, :is_valid, :reason)""",
+    #         {
+    #             "vote_id": self.vote_id,
+    #             "checker_id": self.checker_id,
+    #             "is_valid": self.is_valid,
+    #             "reason": self.reason
+    #         }
+    #     )
+
+    #     conn.commit()
+    #     conn.close()
+
+    # @staticmethod
+    # def fetch_valid_votes():
+    #     conn = sql.connect(db_path)
+    #     c = conn.cursor()
+
+    #     c.execute("""
+    #         SELECT vote.vote_id, checker.lastname || ', ' || checker.firstname AS name
+    #         FROM vote
+    #         INNER JOIN checker
+    #         ON vote.checker_id = checker.id
+    #         WHERE is_valid=1
+    #     """)
+
+    #     fields = c.fetchall()
+
+    #     return fields
     
-    @staticmethod
-    def fetch_invalid_votes():
-        conn = sql.connect(db_path)
-        c = conn.cursor()
+    # @staticmethod
+    # def fetch_invalid_votes():
+    #     conn = sql.connect(db_path)
+    #     c = conn.cursor()
 
-        c.execute("""
-            SELECT vote.vote_id, checker.lastname || ', ' || checker.firstname AS name, reason
-            FROM vote
-            INNER JOIN checker
-            ON vote.checker_id = checker.id
-            WHERE is_valid=0
-        """)
+    #     c.execute("""
+    #         SELECT vote.vote_id, checker.lastname || ', ' || checker.firstname AS name, reason
+    #         FROM vote
+    #         INNER JOIN checker
+    #         ON vote.checker_id = checker.id
+    #         WHERE is_valid=0
+    #     """)
 
-        fields = c.fetchall()
+    #     fields = c.fetchall()
 
-        return fields
+    #     return fields
 
-    @staticmethod
-    def fetch_vote(vote_id):
-        conn = sql.connect(db_path)
-        c = conn.cursor()
+    # @staticmethod
+    # def fetch_vote(vote_id):
+    #     conn = sql.connect(db_path)
+    #     c = conn.cursor()
 
-        c.execute("""
-            SELECT checker.lastname || ', ' || checker.firstname AS name, is_valid, reason
-            FROM vote
-            INNER JOIN checker
-            ON vote.checker_id = checker.id
-            WHERE vote_id=?""",
-            (vote_id,)
-        )
+    #     c.execute("""
+    #         SELECT checker.lastname || ', ' || checker.firstname AS name, is_valid, reason
+    #         FROM vote
+    #         INNER JOIN checker
+    #         ON vote.checker_id = checker.id
+    #         WHERE vote_id=?""",
+    #         (vote_id,)
+    #     )
 
-        fields = c.fetchone()
-        conn.close()
+    #     fields = c.fetchone()
+    #     conn.close()
 
-        if fields: return fields
+    #     if fields: return fields

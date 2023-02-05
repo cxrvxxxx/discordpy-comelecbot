@@ -51,7 +51,26 @@ class Checker:
         self.update()
 
     @classmethod
-    def get_by_id(cls, discord_id):
+    def get_by_id(cls, id):
+        conn = sql.connect(db_path)
+        c = conn.cursor()
+
+        c.execute("""
+            SELECT * FROM checker
+            WHERE
+                id=?""",
+            (id,)
+        )
+
+        fields = c.fetchone()
+        conn.close()
+
+        checker = cls(*fields) if fields else None
+
+        return checker
+
+    @classmethod
+    def get_by_discord_id(cls, discord_id):
         conn = sql.connect(db_path)
         c = conn.cursor()
 
@@ -62,10 +81,9 @@ class Checker:
         )
 
         fields = c.fetchone()
+        conn.close()
 
         checker = cls(*fields) if fields else None
-
-        conn.close()
 
         return checker
 
@@ -76,6 +94,8 @@ class Checker:
 
         c.execute("SELECT * FROM checker")
         fields = c.fetchall()
+
+        conn.close()
 
         checkers = []
         for row in fields:
@@ -105,10 +125,10 @@ class Checker:
         conn.commit()
         conn.close()
 
-        return cls.get_by_id(discord_id)
+        return cls.get_by_discord_id(discord_id)
 
     def update(self):
-        if not self.get_by_id(self.__discord_id):
+        if not self.get_by_id(self.__id):
             return
         
         conn = sql.connect(db_path)
@@ -132,10 +152,10 @@ class Checker:
         conn.commit()
         conn.close()
 
-        return self.get_by_id(self.__discord_id)
+        return self.get_by_id(self.__id)
 
     def delete(self):
-        if not self.get_by_id(self.__discord_id):
+        if not self.get_by_id(self.__id):
             return
         
         conn = sql.connect(db_path)
