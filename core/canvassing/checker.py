@@ -1,19 +1,6 @@
 import sqlite3 as sql
 
-db_path = r'./data/AppData.db'
-conn = sql.connect(db_path)
-c = conn.cursor()
-c.execute("""
-    CREATE TABLE IF NOT EXISTS checker (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    discord_id INTEGER,
-    firstname VARCHAR(255),
-    lastname VARCHAR(255),
-    email VARCHAR(255)
-    )"""
-)
-conn.commit()
-conn.close()
+from . import db_path
 
 class Checker:
     def __init__(self, id: int, discord_id: int, firstname: str, lastname: str, email: str):

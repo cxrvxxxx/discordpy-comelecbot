@@ -146,7 +146,7 @@ class CanvassingCheckers(commands.Cog):
 
     @commands.command()
     async def checker(self, ctx, *, member: discord.Member):
-        checker = Checker.get_by_id(member.id)
+        checker = Checker.get_by_discord_id(member.id)
 
         if not checker:
             await ctx.send("Error, user is not a registered checker.")
