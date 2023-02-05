@@ -11,11 +11,15 @@ class Workfile:
         self.wb = load_workbook(f'{workfile_path}/{self.fn}')
         self.ws = self.wb.active
 
-    def fetch_row(self, row_id: int, col_end: int, col_start: int  = 1):
+    def fetch_row(self, row_id):
         fields = []
 
-        for c in range(col_start, col_end):
-            fields.append(self.ws[f'{column(c)}{row_id + 1}'].value)
+        c = 1
+        while True:
+            value = self.ws[f'{column(c)}{row_id + 1}'].value
+            if not value: break
+            fields.append(value)
+            c += 1
 
         return fields
 
