@@ -3,7 +3,7 @@ import os
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter as column
 
-workfile_path = r'./data/workfile'
+from . import workfile_path
 
 class Workfile:
     def __init__(self, fn):

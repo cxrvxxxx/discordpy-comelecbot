@@ -1,21 +1,6 @@
 import sqlite3 as sql
 
-db_path = r'./data/AppData.db'
-
-conn = sql.connect(db_path)
-c = conn.cursor()
-c.execute("""
-    CREATE TABLE IF NOT EXISTS vote (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    vote_id INTEGER,
-    checker_id INTEGER,
-    is_valid INTEGER,
-    reason INTEGER,
-    FOREIGN KEY (checker_id) REFERENCES checker (id)
-    )"""
-)
-conn.commit()
-conn.close()
+from . import db_path
 
 class Vote:
     def __init__(self, id: int, vote_id: int, checekr_id: int, is_valid: bool, reason: int):
@@ -151,6 +136,9 @@ class Vote:
     def update(self):
         if not self.get_by_id(self.__vote_id):
             return
+
+        conn = sql.connect(db_path)
+        c = conn.cursor()
         
         c.execute(""""
             UPDATE vote
