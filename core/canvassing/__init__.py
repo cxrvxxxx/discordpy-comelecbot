@@ -24,6 +24,7 @@ c.execute("""
     CREATE TABLE IF NOT EXISTS vote (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     vote_id INTEGER,
+    rep_col INTEGER,
     checker_id INTEGER,
     is_valid INTEGER,
     reason INTEGER,
