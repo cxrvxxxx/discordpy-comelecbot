@@ -231,9 +231,11 @@ class CanvassingVotes(commands.Cog):
             await ctx.send("Error, you must be a checker to do this.")
             return
         
+        msg: discord.Message = await ctx.send("Processing... Please wait.")
+        
         wf = Workfile(Workfile.get_workfile())
         if not wf:
-            await ctx.send("Error, no working file.")
+            await msg.edit(content = "Error, no working file.")
             return
 
         row_id = int(custom_id) + 1 if custom_id else 2
@@ -243,7 +245,7 @@ class CanvassingVotes(commands.Cog):
                 row_id += 1
 
             if wf.cell(1, row_id).value is None:
-                await ctx.send("Error, no available vote.")
+                await msg.edit(content = "Error, no available vote")
                 return
 
         embed = discord.Embed(
@@ -289,7 +291,7 @@ class CanvassingVotes(commands.Cog):
                     value = vote.get_reason()
                 )
 
-        await ctx.send(embed=embed)
+        await msg.edit(content = None, embed=embed)
 
     @commands.command()
     async def validate(self, ctx, vote_id: int):
@@ -297,33 +299,55 @@ class CanvassingVotes(commands.Cog):
         if not checker:
             await ctx.send("Error, you must be a checker to do this.")
             return
+        
+        msg: discord.Message = await ctx.send("Processing... Please wait.")
 
         wf = Workfile(Workfile.get_workfile())
         fields = wf.fetch_row(vote_id)
 
         if Vote.get_by_vote_id(fields[0]):
-            await ctx.send("Error, vote already checked.")
+            await msg.edit(content = "Error, vote already checked.")
             return
+        
+        col = 17
+        while True and wf.cell(col, 1).value:
+            if wf.cell(col, 1).value.lower().endswith('rep') and wf.cell(col, vote_id + 1).value: break
+            col += 1
 
-        Vote.create(fields[0], checker.get_id(), 1, None)
-        await ctx.send("Vote processed!")
+        Vote.create(fields[0], col, checker.get_id(), 1, None)
+        await msg.edit(content = "Vote processed!")
 
     @commands.command()
-    async def void(self, ctx, vote_id: int, reason: int):
+    async def void(self, ctx, vote_id: int = None, reason: int = None):
+        if not vote_id:
+            await ctx.send("Error, you must specifiy the `Vote ID` to validate.")
+            return
+        
+        if not reason:
+            await ctx.send("Error, you must specify the `Reason`.")
+            return
+
         checker = Checker.get_by_discord_id(ctx.author.id)
         if not checker:
             await ctx.send("Error, you must be a checker to do this.")
             return
+        
+        msg: discord.Message = await ctx.send("Processing... Please wait.")
 
         wf = Workfile(Workfile.get_workfile())
         fields = wf.fetch_row(vote_id)
 
         if Vote.get_by_vote_id(fields[0]):
-            await ctx.send("Error, vote already checked.")
+            await msg.edit(content = "Error, vote already checked.")
             return
+        
+        col = 17
+        while True and wf.cell(col, 1).value:
+            if wf.cell(col, 1).value.lower().endswith('rep') and wf.cell(col, vote_id + 1).value: break
+            col += 1
 
-        Vote.create(fields[0], checker.get_id(), 0, reason)
-        await ctx.send("Vote processed!")
+        Vote.create(fields[0], col, checker.get_id(), 0, reason)
+        await msg.edit(content = "Vote processed!")
 
 async def setup(client):
     await client.add_cog(Canvassing(client))
