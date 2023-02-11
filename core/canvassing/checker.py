@@ -3,8 +3,8 @@ import sqlite3 as sql
 from . import db_path
 
 class Checker:
-    def __init__(self, id: int, discord_id: int, firstname: str, lastname: str, email: str):
-        self.__id = id
+    def __init__(self, discord_id: int, firstname: str, lastname: str, email: str):
+        self.__id = discord_id
         self.__discord_id = discord_id
         self.__firstname = firstname
         self.__lastname = lastname
@@ -12,9 +12,6 @@ class Checker:
 
     def get_id(self):
         return self.__id
-    
-    def get_discord_id(self):
-        return self.__discord_id
     
     def get_firstname(self):
         return self.__firstname
@@ -38,32 +35,14 @@ class Checker:
         self.update()
 
     @classmethod
-    def get_by_id(cls, id):
+    def get_by_id(cls, discord_id):
         conn = sql.connect(db_path)
         c = conn.cursor()
 
         c.execute("""
-            SELECT * FROM checker
+            SELECT * FROM checkers
             WHERE
                 id=?""",
-            (id,)
-        )
-
-        fields = c.fetchone()
-        conn.close()
-
-        checker = cls(*fields) if fields else None
-
-        return checker
-
-    @classmethod
-    def get_by_discord_id(cls, discord_id):
-        conn = sql.connect(db_path)
-        c = conn.cursor()
-
-        c.execute("""
-            SELECT * FROM checker
-            WHERE discord_id=?""",
             (discord_id,)
         )
 
@@ -79,7 +58,7 @@ class Checker:
         conn = sql.connect(db_path)
         c = conn.cursor()
 
-        c.execute("SELECT * FROM checker")
+        c.execute("SELECT * FROM checkers")
         fields = c.fetchall()
 
         conn.close()
@@ -99,10 +78,10 @@ class Checker:
         c = conn.cursor()
 
         c.execute("""
-            INSERT INTO checker (discord_id, firstname, lastname, email)
-            VALUES (:discord_id, :firstname, :lastname, :email)""",
+            INSERT INTO checkers (id, firstname, lastname, email)
+            VALUES (:id, :firstname, :lastname, :email)""",
             {
-                "discord_id": discord_id,
+                "id": discord_id,
                 "firstname": firstname,
                 "lastname": lastname,
                 "email": email
@@ -112,47 +91,45 @@ class Checker:
         conn.commit()
         conn.close()
 
-        return cls.get_by_discord_id(discord_id)
+        return cls.get_by_id(discord_id)
 
     def update(self):
-        if not self.get_by_id(self.__id):
-            return
-        
         conn = sql.connect(db_path)
         c = conn.cursor()
 
         c.execute("""
-            UPDATE checker
+            UPDATE checkers
             SET
                 firstname=:firstname,
                 lastname=:lastname,
                 email=:email
-            WHERE id=:id""",
+            WHERE
+                id=:id""",
             {
-                "firstname": self.__firstname,
-                "lastname": self.__lastname,
-                "email": self.__email,
-                "id": self.__id
+                "firstname": self.get_firstname(),
+                "lastname": self.get_lastname(),
+                "email": self.get_email(),
+                "id": self.get_id()
             }
         )
 
         conn.commit()
         conn.close()
 
-        return self.get_by_id(self.__id)
+        return self.get_by_id(self.get_id())
 
     def delete(self):
-        if not self.get_by_id(self.__id):
+        if not self.get_by_id(self.get_id()):
             return
         
         conn = sql.connect(db_path)
         c = conn.cursor()
 
         c.execute("""
-            DELETE FROM checker
+            DELETE FROM checkers
             WHERE
                 id=?""",
-            (self.__id,)
+            (self.get_id(),)
         )
 
         conn.commit()
