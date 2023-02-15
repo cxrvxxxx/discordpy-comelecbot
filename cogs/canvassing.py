@@ -4,6 +4,7 @@ from discord.ext import commands
 from core.canvassing.checker import Checker
 from core.canvassing.workfile import Workfile, workfile_path
 from core.canvassing.vote import Vote
+from core.canvassing.candidate import Candidate
 
 class Canvassing(commands.Cog):
     def __init__(self, client):
@@ -121,16 +122,16 @@ class CanvassingCheckers(commands.Cog):
             embed = discord.Embed(
                 colour = discord.Color.gold(),
                 title = "How to use the 'register' command?",
-                description = "$register firstname_lastname_citu-email"
+                description = "$register firstname/lastname/email"
             )
             embed.add_field(
                 name = "Sample",
-                value = "$register John Van_Doe_johnvan.doe@cit.edu"
+                value = "$register John Van/Dela Pena/johnvan.doe@cit.edu"
             )
             await ctx.send(embed=embed)
             return
 
-        fields = details.split("_")
+        fields = details.split("/")
 
         if len(fields) != 3:
             await ctx.send("Invalid details, try again.")
@@ -145,8 +146,11 @@ class CanvassingCheckers(commands.Cog):
         await ctx.send("You are now registered!")
 
     @commands.command()
-    async def checker(self, ctx, *, member: discord.Member):
-        checker = Checker.get_by_discord_id(member.id)
+    async def checker(self, ctx, *, member: discord.Member = None):
+        if not member:
+            member = ctx.author
+
+        checker = Checker.get_by_id(member.id)
 
         if not checker:
             await ctx.send("Error, user is not a registered checker.")
@@ -177,7 +181,7 @@ class CanvassingCheckers(commands.Cog):
 
         embed.add_field(
             name = "Discord User",
-            value = ctx.guild.get_member(checker.get_discord_id()).mention,
+            value = ctx.guild.get_member(checker.get_id()).mention,
             inline = False
         )
 
@@ -202,7 +206,7 @@ class CanvassingCheckers(commands.Cog):
 
     @commands.command()
     async def updatechecker(self, ctx, field, *, value):
-        checker = Checker.get_by_discord_id(ctx.author.id)
+        checker = Checker.get_by_id(ctx.author.id)
         if not checker:
             await ctx.send("Error, you must be a checker to do this.")
             return
@@ -227,7 +231,7 @@ class CanvassingVotes(commands.Cog):
 
     @commands.command()
     async def pullvote(self, ctx, custom_id = None):
-        if not Checker.get_by_discord_id(ctx.author.id):
+        if not Checker.get_by_id(ctx.author.id):
             await ctx.send("Error, you must be a checker to do this.")
             return
         
@@ -241,7 +245,7 @@ class CanvassingVotes(commands.Cog):
         row_id = int(custom_id) + 1 if custom_id else 2
         if not custom_id:
             while True and wf.cell(1, row_id):
-                if not Vote.get_by_vote_id(wf.cell(1, row_id).value): break
+                if not Vote.get_by_id(wf.cell(1, row_id).value): break
                 row_id += 1
 
             if wf.cell(1, row_id).value is None:
@@ -295,7 +299,7 @@ class CanvassingVotes(commands.Cog):
 
     @commands.command()
     async def validate(self, ctx, vote_id: int):
-        checker = Checker.get_by_discord_id(ctx.author.id)
+        checker = Checker.get_by_id(ctx.author.id)
         if not checker:
             await ctx.send("Error, you must be a checker to do this.")
             return
@@ -305,7 +309,7 @@ class CanvassingVotes(commands.Cog):
         wf = Workfile(Workfile.get_workfile())
         fields = wf.fetch_row(vote_id)
 
-        if Vote.get_by_vote_id(fields[0]):
+        if Vote.get_by_id(fields[0]):
             await msg.edit(content = "Error, vote already checked.")
             return
         
@@ -314,20 +318,13 @@ class CanvassingVotes(commands.Cog):
             if wf.cell(col, 1).value.lower().endswith('rep') and wf.cell(col, vote_id + 1).value: break
             col += 1
 
-        Vote.create(fields[0], col, checker.get_id(), 1, None)
+        vote = Vote.create(fields[0], col, checker.get_id(), 1, None)
+        if vote: Candidate.process_names(wf.cell(col, fields[0] + 1).value, col, 1)
         await msg.edit(content = "Vote processed!")
 
     @commands.command()
     async def void(self, ctx, vote_id: int = None, reason: int = None):
-        if not vote_id:
-            await ctx.send("Error, you must specifiy the `Vote ID` to validate.")
-            return
-        
-        if not reason:
-            await ctx.send("Error, you must specify the `Reason`.")
-            return
-
-        checker = Checker.get_by_discord_id(ctx.author.id)
+        checker = Checker.get_by_id(ctx.author.id)
         if not checker:
             await ctx.send("Error, you must be a checker to do this.")
             return
@@ -337,7 +334,7 @@ class CanvassingVotes(commands.Cog):
         wf = Workfile(Workfile.get_workfile())
         fields = wf.fetch_row(vote_id)
 
-        if Vote.get_by_vote_id(fields[0]):
+        if Vote.get_by_id(fields[0]):
             await msg.edit(content = "Error, vote already checked.")
             return
         
@@ -346,7 +343,8 @@ class CanvassingVotes(commands.Cog):
             if wf.cell(col, 1).value.lower().endswith('rep') and wf.cell(col, vote_id + 1).value: break
             col += 1
 
-        Vote.create(fields[0], col, checker.get_id(), 0, reason)
+        vote = Vote.create(fields[0], col, checker.get_id(), 0, reason)
+        if vote: Candidate.process_names(wf.cell(col, fields[0] + 1).value, col, 1)
         await msg.edit(content = "Vote processed!")
 
 async def setup(client):
