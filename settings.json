@@ -1,0 +1,11 @@
+{
+    "default_prefix": "c!",
+    "version_info": {
+        "app_name": "CIT-U ComelecBot - Official CIT-U Discord Bot",
+        "version_number": "1.0.0",
+        "author": "cxrvxxx"
+    },
+    "installed_modules": [
+        "cogs.greeter"
+    ]
+}

@@ -1,0 +1,7 @@
+{
+    "host": "170.187.197.155",
+    "port": 3306,
+    "user": "comelecbot",
+    "password": "Comelec_2023",
+    "database": "dbComelecBot"
+}
