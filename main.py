@@ -19,4 +19,4 @@ if __name__ == "__main__":
     TOKEN = os.getenv('TOKEN')
 
     client = ComelecBot(sys_params=sys.argv)
-    client.run(TOKEN)
+    client.run(TOKEN, root_logger=True)

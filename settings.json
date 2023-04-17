@@ -6,6 +6,7 @@
         "author": "cxrvxxx"
     },
     "installed_modules": [
-        "cogs.greeter"
+        "cogs.greeter",
+        "cogs.announcer"
     ]
 }
