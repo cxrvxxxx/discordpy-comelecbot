@@ -9,6 +9,7 @@ from core.bot import ComelecBot
 class ElectionStats(commands.Cog):
     def __init__(self, client: ComelecBot) -> None:
         self.client = client
+        self.client.logger.info("ElectionStats loaded")
 
     @app_commands.command(name='stats', description='Show an overview of the current elections')
     async def stats(self, interaction: discord.Interaction) -> None:
