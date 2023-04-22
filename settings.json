@@ -8,6 +8,7 @@
     "installed_modules": [
         "cogs.greeter",
         "cogs.announcer",
-        "cogs.canvasser"
+        "cogs.canvasser",
+        "cogs.help"
     ]
 }

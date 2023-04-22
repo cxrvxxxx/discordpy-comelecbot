@@ -8,7 +8,7 @@ class Announcer(commands.Cog):
     def __init__(self, client: ComelecBot) -> None:
         self.client = client
 
-    @app_commands.command(name="echo", description="Make an announcement")
+    @app_commands.command(name="echo", description="Copy a message to a channel")
     @app_commands.describe(channel="The channel to send the announcement to")
     @app_commands.describe(message_id="Message ID to copy")
     async def echo(self, interaction: discord.Interaction, channel: discord.TextChannel, message_id: str) -> None:
