@@ -1,0 +1,11 @@
+*.pyc
+__pycache__/
+
+.venv/
+
+.env
+
+logs/
+*.log
+
+db_settings.json
