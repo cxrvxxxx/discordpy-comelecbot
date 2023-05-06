@@ -178,3 +178,15 @@ class CandidateModel(ABCMeta):
                 candidates.append(Candidate(*candidates_data))
 
             return candidates
+        
+    @staticmethod
+    def get_candidate_by_id(connection, candidate_id) -> Union[Candidate, None]:
+        sql = "SELECT * FROM tblCandidate WHERE id=%(candidate_id)s"
+
+        with connection as conn:
+            c = conn.cursor()
+            c.execute(sql, { "candidate_id": candidate_id, })
+            data = c.fetchone()
+
+        if data:
+            return Candidate(*data)
