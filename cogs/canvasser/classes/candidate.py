@@ -35,3 +35,6 @@ class Candidate(object):
     @property
     def affiliation(self) -> Party:
         return self._affiliation
+
+    def __repr__(self) -> str:
+        return f"{self.lastname}, {self.firstname}{f' {self.middle_initial}.' if self.middle_initial else ''}"
