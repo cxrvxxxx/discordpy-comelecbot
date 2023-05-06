@@ -204,7 +204,6 @@ class Canvasser(commands.Cog):
                 await msg.edit(content=f"Working {count}")
                 self.LOGGER.info(f"Processed ({'{:.2f}'.format(time() - iter_start)})s | voteId: {vote_id}, studentNo: {student_no}, is_valid: {is_valid}, reason: {reason}")
 
-
         try:
             # Save to database
             with self.client.DB_POOL as conn:
