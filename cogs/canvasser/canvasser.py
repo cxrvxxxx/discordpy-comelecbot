@@ -131,7 +131,7 @@ class Canvasser(commands.Cog):
                 c = conn.cursor()
                 c.execute("SELECT * FROM tblVote WHERE id=%(id)s", { "id": vote_id, })
                 if c.fetchone():
-                    self.client.LOGGER.info(F"{vote_id} has been validated. Skipping...")
+                    self.LOGGER.info(F"{vote_id} has been validated. Skipping...")
 
             student_no = row["ID Number"].strip()
             email = row["Email"].strip()
