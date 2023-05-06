@@ -121,6 +121,8 @@ class Canvasser(commands.Cog):
         count = 0
         voided = 0
 
+        msg = await ctx.send("Working...")
+
         # Loop through all votes
         loop_start = time()
         for index, row in df.iterrows():
@@ -190,14 +192,6 @@ class Canvasser(commands.Cog):
                 sql_insert_vote_params[f"id{index}"] = vote_id
                 sql_insert_vote_params[f"isValid{index}"] = is_valid
                 sql_insert_vote_params[f"reason{index}"] = reason
-
-                # Save to database
-                with self.client.DB_POOL as conn:
-                    c = conn.cursor()
-
-                    # Insert votes
-                    sql_insert_vote = sql_insert_vote[:-2]
-                    c.execute(sql_insert_vote, sql_insert_vote_params)
             except Exception as e:
                 self.LOGGER.info(e)
                 continue
@@ -207,10 +201,23 @@ class Canvasser(commands.Cog):
                 if is_valid == 0:
                     voided += 1
                     
+                await msg.edit(content=f"Working {count}")
                 self.LOGGER.info(f"Processed ({'{:.2f}'.format(time() - iter_start)})s | voteId: {vote_id}, studentNo: {student_no}, is_valid: {is_valid}, reason: {reason}")
 
+
+        try:
+            # Save to database
+            with self.client.DB_POOL as conn:
+                c = conn.cursor()
+
+                # Insert votes
+                sql_insert_vote = sql_insert_vote[:-2]
+                c.execute(sql_insert_vote, sql_insert_vote_params)
+        except Exception as e:
+            print(e)
+
         self.LOGGER.info("Done {:.2f}s".format(time() - loop_start))
-        await ctx.send(embed=discord.Embed(
+        await msg.edit(content=None, embed=discord.Embed(
             color=discord.Color.gold(),
             title="Validation Complete",
             description=f"Total: {count}\nVoid: {voided}"
