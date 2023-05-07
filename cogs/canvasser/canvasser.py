@@ -342,9 +342,9 @@ class Canvasser(commands.Cog):
         
         await msg.edit(content=None, embed=discord.Embed(
             color=discord.Color.gold(),
-            title="Validation Complete",
+            title="Validation Complete!",
             description=f"Total: {count}\nVoid: {voided}"
-        ))
+        ).set_image(url="https://scontent.fceb3-1.fna.fbcdn.net/v/t39.30808-6/330836006_736551421144884_8269249174951218445_n.png?_nc_cat=102&ccb=1-7&_nc_sid=e3f864&_nc_eui2=AeHZBZ99StbsdLOml4D-razBJyqCl2kuENUnKoKXaS4Q1Xv44TTvciLS860w8x76OVfXnypEjHchNPiS5tEyZQFp&_nc_ohc=cEQMN75HmNwAX8B4Nse&_nc_ht=scontent.fceb3-1.fna&oh=00_AfBXE8cdx8GgAPS78ke79PsdAHXeGTae5KYChwd-Nox_Kw&oe=645C3D7A"))
 
     @commands.command()
     async def votereview(self, ctx: commands.Context, vote_id: int) -> None:
@@ -385,7 +385,7 @@ class Canvasser(commands.Cog):
         embed = discord.Embed(
             color=discord.Color.green() if IS_VALID else discord.Color.red(),
             title=f"ID: {ID} | {VOTE_DATA.get('name')}",
-            description=f"{STUDENT_ID} : {EMAIL}"
+            description=f"{STUDENT_ID} : {EMAIL}\n{VOTE_DATA.get('college')}"
         )
 
         embed.add_field(

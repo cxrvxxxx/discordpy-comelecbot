@@ -1,3 +1,6 @@
+from datetime import datetime
+import os
+
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -10,6 +13,7 @@ class CandidateStats(commands.Cog):
     def __init__(self, client: ComelecBot) -> None:
         self.client = client
         self.client.logger.info("CandidateStats loaded")
+        self.WORKDIR = os.path.join(os.path.dirname(__file__), 'data', 'workfile')
 
     @app_commands.command(name='candidateinfo', description="Show candidate information")
     @app_commands.describe(candidate_id='ID of the candidate')
@@ -72,7 +76,12 @@ class CandidateStats(commands.Cog):
             value=f"Total votes: {rs_valid_count + rs_void_count}\nValid votes: {rs_valid_count}\nVoided votes: {rs_void_count}",
             inline=False
         )
+
+        embed.set_image(url="https://scontent.fceb3-1.fna.fbcdn.net/v/t39.30808-6/330836006_736551421144884_8269249174951218445_n.png?_nc_cat=102&ccb=1-7&_nc_sid=e3f864&_nc_eui2=AeHZBZ99StbsdLOml4D-razBJyqCl2kuENUnKoKXaS4Q1Xv44TTvciLS860w8x76OVfXnypEjHchNPiS5tEyZQFp&_nc_ohc=cEQMN75HmNwAX8B4Nse&_nc_ht=scontent.fceb3-1.fna&oh=00_AfBXE8cdx8GgAPS78ke79PsdAHXeGTae5KYChwd-Nox_Kw&oe=645C3D7A")
         
+        LAST_UPDATE_DATETIME = datetime.fromtimestamp(os.path.getmtime(fr"{self.WORKDIR}/{os.listdir(self.WORKDIR)[0]}")).strftime('%m/%d/%Y %H:%M')
+        embed.set_footer(text=f"As of {LAST_UPDATE_DATETIME}")
+
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     # TODO: Fix issue: No response for party data exceeding (1024 characters in size)
@@ -168,4 +177,9 @@ class CandidateStats(commands.Cog):
             description=content
         )
 
+        embed.set_image(url="https://scontent.fceb3-1.fna.fbcdn.net/v/t39.30808-6/330836006_736551421144884_8269249174951218445_n.png?_nc_cat=102&ccb=1-7&_nc_sid=e3f864&_nc_eui2=AeHZBZ99StbsdLOml4D-razBJyqCl2kuENUnKoKXaS4Q1Xv44TTvciLS860w8x76OVfXnypEjHchNPiS5tEyZQFp&_nc_ohc=cEQMN75HmNwAX8B4Nse&_nc_ht=scontent.fceb3-1.fna&oh=00_AfBXE8cdx8GgAPS78ke79PsdAHXeGTae5KYChwd-Nox_Kw&oe=645C3D7A")
+        
+        LAST_UPDATE_DATETIME = datetime.fromtimestamp(os.path.getmtime(fr"{self.WORKDIR}/{os.listdir(self.WORKDIR)[0]}")).strftime('%m/%d/%Y %H:%M')
+        embed.set_footer(text=f"As of {LAST_UPDATE_DATETIME}")
+        
         await interaction.response.send_message(embed=embed, ephemeral=True)
