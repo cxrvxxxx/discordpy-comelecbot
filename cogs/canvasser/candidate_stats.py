@@ -67,12 +67,18 @@ class CandidateStats(commands.Cog):
 
         embed = discord.Embed(
             color=discord.Color.gold(),
-            title=f"({rs_id}) {rs_name}",
-            description=f"Running for {rs_pos} under {rs_party}"
+            title="Elections 2023 Statistics",
+            description="Candidate name search"
         )
 
         embed.add_field(
-            name="Voting statistics",
+            name=f"({rs_id}) {rs_name}",
+            value=f"Running for {rs_pos} under {rs_party}",
+            inline=False
+        )
+
+        embed.add_field(
+            name="Polling statistics",
             value=f"Total votes: {rs_valid_count + rs_void_count}\nValid votes: {rs_valid_count}\nVoided votes: {rs_void_count}",
             inline=False
         )
@@ -173,8 +179,14 @@ class CandidateStats(commands.Cog):
 
         embed = discord.Embed(
             color=discord.Color.gold(),
-            title=f"{position.name}",
-            description=content
+            title="Elections 2023 Statistics",
+            description="Candidates who did not garner at least one (1) vote may not appear in the list."
+        )
+
+        embed.add_field(
+            name=f"{position.name}",
+            value=content,
+            inline=False
         )
 
         embed.set_image(url="https://scontent.fceb3-1.fna.fbcdn.net/v/t39.30808-6/330836006_736551421144884_8269249174951218445_n.png?_nc_cat=102&ccb=1-7&_nc_sid=e3f864&_nc_eui2=AeHZBZ99StbsdLOml4D-razBJyqCl2kuENUnKoKXaS4Q1Xv44TTvciLS860w8x76OVfXnypEjHchNPiS5tEyZQFp&_nc_ohc=cEQMN75HmNwAX8B4Nse&_nc_ht=scontent.fceb3-1.fna&oh=00_AfBXE8cdx8GgAPS78ke79PsdAHXeGTae5KYChwd-Nox_Kw&oe=645C3D7A")
