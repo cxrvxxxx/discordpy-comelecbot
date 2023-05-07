@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import logging
 from time import time
-from typing import List, Union, Callable, Coroutine
+from typing import List, Union, Callable, Coroutine, Dict, Any
 import functools
 import asyncio
 
@@ -28,16 +28,26 @@ class Canvasser(commands.Cog):
         self.WORKDIR = os.path.join(os.path.dirname(__file__), 'data', 'workfile')
         self.LOGGER = logging.getLogger('canvasser')
 
-    def is_unique(self, vote_id: int, student_id: str, email: str) -> bool:
+    def is_validated(self, vote_id: int) -> bool:
+        student_id = student_id.strip()
+        email = email.strip()
+
+        with self.client.DB_POOL as conn:
+            c = conn.cursor()
+            c.execute("SELECT * FROM tblVote WHERE id=%(id)s", { "id": vote_id, })
+
+            return False if c.fetchone() else True    
+
+    def is_unique(self, student_id: str, email: str) -> bool:
         # Clean arguments
         student_id = student_id.strip()
         email = email.strip()
 
         with self.client.DB_POOL as conn:
             c = conn.cursor()
-            c.execute("SELECT * FROM tblVote WHERE id=%(id)s OR studentId=%(studentId)s OR email=%(email)s", { "id": vote_id, "studentId": student_id, "email": email, })
+            c.execute("SELECT * FROM tblVote WHERE studentId=%(studentId)s OR email=%(email)s", { "studentId": student_id, "email": email, })
 
-            return False if c.fetchone() else True        
+            return False if c.fetchone() else True  
 
     def is_enrolled(self, student_id: str) -> bool:
         student_id = student_id.strip()
@@ -104,17 +114,21 @@ class Canvasser(commands.Cog):
             reason = ""
 
             try:
-                # Check if unique
-                if not self.is_unique(vote_id, student_no, email):
-                    is_valid = 0
-                    reason = "Duplicate vote. "
-                    self.LOGGER.info(f"(ID: {vote_id}) flagged as DUPLICATE. Skipping...")
+                # Check if validated
+                if not self.is_validated(vote_id):
+                    self.LOGGER.info(f"(ID: {vote_id}) flagged as VALIDATED. Skipping...")
                     continue
+
+                # Check if duplicate
+                if not self.is_unique(student_no, email):
+                    is_valid = 0
+                    reason += "Duplicate vote. "
+                    self.LOGGER.info(f"(ID: {vote_id}) flagged as 'Duplicate'.")
 
                 # Check if agreed
                 if is_valid and not row["Agreement"] == "AGREE":
                     is_valid = 0
-                    reason = "Did not agree. "
+                    reason += "Did not agree. "
                     self.LOGGER.info(f"(ID: {vote_id}) flagged as 'DNA'.")
 
                 # Check if enrolled
@@ -241,42 +255,73 @@ class Canvasser(commands.Cog):
 
         self.LOGGER.info("Done {:.2f}s".format(time() - loop_start))
 
-    @commands.command()
-    async def student(self, ctx: commands.Context, *, student_id: str) -> None:
-        is_enrolled = self.is_enrolled(student_id)
-        await ctx.send(f"Student with ID Number {student_id} is {'enrolled' if is_enrolled else 'not enrolled'}")
+    @to_thread
+    def get_vote_data(self, vote_id: int) -> Dict[str, Any]:
+        # Load file
+        df = pd.read_excel(fr"{self.WORKDIR}/{os.listdir(self.WORKDIR)[0]}", header=0)
+        df = df.fillna('None')
+        df = df.astype("object")
 
-    @commands.command()
-    async def clearwd(self, ctx: commands.Context) -> None:
+        selected_row = df[df['ID'] == vote_id].iloc[0]
+
+        return {
+            "consent": selected_row['Agreement'],
+            "name": selected_row['Full Name'],
+            "year": selected_row['Year level'],
+            "college": selected_row['College'],
+        }
+
+    @app_commands.command(name="clearwd", description="Removes the current working file")
+    async def clearwd(self, interaction: discord.Interaction) -> None:
+        required_role = interaction.guild.get_role(1096073463313219687)
+        if not required_role in interaction.user.roles:
+            await interaction.response.send_message("You are not authorized to use this command")
+            return
+        
         for file in os.listdir(self.WORKDIR):
             os.remove(fr"{self.WORKDIR}/{file}")
 
-        await ctx.send("Working Directory cleared!")
+        await interaction.response.send_message(embed=discord.Embed(
+            color=discord.Color.gold(),
+            description="Working directory cleared. Commands dependent on the working file will no longer function."
+        ).set_footer(
+            text="Use '/loadfile' to load a working file."
+        ))
 
-    @commands.command()
-    async def loadfile(self, ctx: commands.Context) -> None:
-        if not ctx.message.attachments:
-            await ctx.send("Error: No attached file.")
+    @app_commands.command(name="loadfile", description="Load a working file for the bot to use")
+    async def loadfile(self, interaction: discord.Interaction) -> None:
+        required_role = interaction.guild.get_role(1096073463313219687)
+        if not required_role in interaction.user.roles:
+            await interaction.response.send_message("You are not authorized to use this command")
             return
         
-        if len(ctx.message.attachments) > 1:
-            await ctx.send("Error: Too many files.")
+        if not interaction.message.attachments:
+            await interaction.response.send_message("Error: No attached file.")
             return
         
-        file = ctx.message.attachments[0]
+        if len(interaction.message.attachments) > 1:
+            await interaction.response.send_message("Error: Too many files.")
+            return
+        
+        file = interaction.message.attachments[0]
         if not file.filename.endswith('.xlsx'):
-            await ctx.send("Error: Not an Excel file.")
+            await interaction.response.send_message("Error: Not an Excel file.")
             return
         
         if len(os.listdir(self.WORKDIR)) > 0:
-            await ctx.send("Error: Workfile already exists.")
+            await interaction.response.send_message("Error: Workfile already exists.")
             return
         
         await file.save(fr"{self.WORKDIR}/{file.filename}")   
-        await ctx.send("File saved!")
+        await interaction.response.send_message("File saved!")
 
     @commands.command()
     async def autovalidate(self, ctx: commands.Context) -> None:
+        required_role = ctx.guild.get_role(1096073463313219687)
+        if not required_role in ctx.author.roles:
+            await ctx.send("You are not authorized to use this command")
+            return
+
         if not len(os.listdir(self.WORKDIR)) > 0:
             await ctx.send("Error: No workfile.")
             return
@@ -303,4 +348,149 @@ class Canvasser(commands.Cog):
             title="Validation Complete",
             description=f"Total: {count}\nVoid: {voided}"
         ))
+
+    @commands.command()
+    async def votereview(self, ctx: commands.Context, vote_id: int) -> None:
+        required_role = ctx.guild.get_role(1096073463313219687)
+        if not required_role in ctx.author.roles:
+            await ctx.send("You are not authorized to use this command")
+            return
+        
+        if not len(os.listdir(self.WORKDIR)) > 0:
+            await ctx.send("Error: No workfile.")
+            return
+                
+        with self.client.DB_POOL as conn:
+            c = conn.cursor()
+
+            c.execute("SELECT * FROM tblVote WHERE id=%(id)s", { "id": vote_id, })
+            data = c.fetchone()
+
+            if not data:
+                await ctx.send(f"Error, no validated vote with ID {vote_id} found")
+                return
+            
+            ID, STUDENT_ID, EMAIL, IS_VALID, REASON = data
+            
+            c.execute("SELECT candidateId FROM tblStudentVote WHERE voteId=%(voteId)s", { "voteId": ID, })
+            candidate_ids = c.fetchall()
+
+        VOTE_DATA = await self.get_vote_data(vote_id)
+        CONSENT = VOTE_DATA.get('consent')
+
+        candidates = ""
+        for candidate_id in candidate_ids:
+            candidate = CandidateModel.get_candidate_by_id(self.client.DB_POOL, candidate_id[0])
+
+            if candidate:
+                candidates += f"({candidate.candidate_id}) {candidate.lastname}, {candidate.firstname} {candidate.middle_initial + '.' if candidate.middle_initial else ''}\n"
+
+        embed = discord.Embed(
+            color=discord.Color.green() if IS_VALID else discord.Color.red(),
+            title=f"ID: {ID} | {VOTE_DATA.get('name')}",
+            description=f"{STUDENT_ID} : {EMAIL}"
+        )
+
+        embed.add_field(
+            name="General Information",
+            value=f"""{'🔴' if CONSENT != 'AGREE' else '🟢'} Consent: {CONSENT}
+            {'🔴' if not IS_VALID else '🟢'} Valid: {True if IS_VALID else False}
+            {'🔴' if not REASON == '' else '🟢'} Reason: {REASON if REASON else 'N/A'}"""
+        )
+
+        embed.add_field(
+            name="Affected Candidates",
+            value=candidates,
+            inline=False
+        )
+
+        await ctx.send(embed=embed)
+
+    @app_commands.command(name="validate", description="Mark a vote as validated")
+    @app_commands.describe(vote_id="The ID of the vote to validate")
+    async def validate(self, interaction: discord.Interaction, vote_id: int) -> None:
+        required_role = interaction.guild.get_role(1096073463313219687)
+        if not required_role in interaction.user.roles:
+            await interaction.response.send_message("You are not authorized to use this command")
+            return
+        
+        with self.client.DB_POOL as conn:
+            c = conn.cursor()
+
+            c.execute("SELECT * FROM tblVote WHERE id=%(id)s", { "id": vote_id, })
+            data = c.fetchone()
+
+            if not data:
+                await interaction.response.send_message(f"Error, no validated vote with ID {vote_id} found")
+                return
+            
+            c.execute("UPDATE tblVote SET isValid=1, reason='' WHERE id=%(id)s", { "id": vote_id, })
+
+        await interaction.response.send_message(embed=discord.Embed(
+            color=discord.Color.gold(),
+            description=f"Vote ID {vote_id} is now marked as **VALID**."
+        ))
+
+    @app_commands.command(name="void", description="Mark a vote as voided")
+    @app_commands.describe(vote_id="The ID of the vote to void")
+    @app_commands.describe(reason="The reason for voiding the vote")
+    async def void(self, interaction: discord.Interaction, vote_id: int, *, reason: str) -> None:
+        required_role = interaction.guild.get_role(1096073463313219687)
+        if not required_role in interaction.user.roles:
+            await interaction.response.send_message("You are not authorized to use this command")
+            return
+        
+        with self.client.DB_POOL as conn:
+            c = conn.cursor()
+
+            c.execute("SELECT * FROM tblVote WHERE id=%(id)s", { "id": vote_id, })
+            data = c.fetchone()
+
+            if not data:
+                await interaction.response.send_message(f"Error, no validated vote with ID {vote_id} found")
+                return
+            
+            c.execute("UPDATE tblVote SET isValid=0, reason=%(reason)s WHERE id=%(id)s", { "id": vote_id, "reason": reason, })
+
+        await interaction.response.send_message(embed=discord.Embed(
+            color=discord.Color.gold(),
+            description=f"Vote ID {vote_id} is now marked as **VOID**. Reason: '{reason}'."
+        ))
+
+    @app_commands.command(name="getvoided", description="List all voided votes")
+    @app_commands.describe(offset="Offset the list by specified amount")
+    async def getvoided(self, interaction: discord.Interaction, offset: int=0) -> None:
+        with self.client.DB_POOL as conn:
+            c = conn.cursor()
+
+            c.execute("SELECT id, reason FROM tblVote WHERE isValid=0 LIMIT 20 OFFSET %(offset)s", { "offset": offset, })
+            dataset = c.fetchall()
+
+            c.execute("SELECT COUNT(id) FROM tblVote WHERE isValid=0")
+            COUNT = c.fetchone()[0]
+
+            if not dataset:
+                await interaction.response.send_message("No voided votes found")
+                return
+            
+        embed = discord.Embed(
+            color=discord.Color.gold(),
+            title="List of Voided Votes",
+            description="Subject to review by the Commission on Elections"
+        )
+
+        voided_votes = ""
+        for data in dataset:
+            voided_votes += f"**`{data[0]}`** - {data[1]}\n"
+
+        embed.add_field(
+            name="ID - Void reason",
+            value=voided_votes,
+            inline=False
+        )
+
+        if COUNT > 20:
+            embed.add_footer(text="Specify an offset to see the voided votes 21st and above")
+
+        await interaction.response.send_message(embed=embed)
 
