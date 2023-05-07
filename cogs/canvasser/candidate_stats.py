@@ -71,6 +71,7 @@ class CandidateStats(commands.Cog):
                 candidate = candidates[0]
                 rs_id = candidate.candidate_id
                 rs_name = candidate
+                rs_party = candidate.affiliation.name
                 rs_valid_count = 0
                 rs_void_count = 0
                 rs_pos = candidate.position.name
