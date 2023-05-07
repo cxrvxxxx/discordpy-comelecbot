@@ -63,7 +63,17 @@ class CandidateStats(commands.Cog):
         with self.client.DB_POOL as conn:
             c = conn.cursor()
             c.execute(query, { "candidateId": candidates[0].candidate_id, })
-            rs_id, rs_name, rs_party, rs_valid_count, rs_void_count, rs_pos = c.fetchone()
+            dataset = c.fetchone()
+
+            if dataset:
+                rs_id, rs_name, rs_party, rs_valid_count, rs_void_count, rs_pos = dataset
+            else:
+                candidate = candidates[0]
+                rs_id = candidate.candidate_id
+                rs_name = candidate
+                rs_valid_count = 0
+                rs_void_count = 0
+                rs_pos = candidate.position.name
 
         embed = discord.Embed(
             color=discord.Color.gold(),
