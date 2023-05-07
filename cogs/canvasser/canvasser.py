@@ -29,14 +29,11 @@ class Canvasser(commands.Cog):
         self.LOGGER = logging.getLogger('canvasser')
 
     def is_validated(self, vote_id: int) -> bool:
-        student_id = student_id.strip()
-        email = email.strip()
-
         with self.client.DB_POOL as conn:
             c = conn.cursor()
             c.execute("SELECT * FROM tblVote WHERE id=%(id)s", { "id": vote_id, })
 
-            return False if c.fetchone() else True    
+            return False if c.fetchone() else True
 
     def is_unique(self, student_id: str, email: str) -> bool:
         # Clean arguments
