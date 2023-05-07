@@ -151,7 +151,7 @@ class CandidateModel(ABCMeta):
             return candidates
 
     @staticmethod
-    def get_position(connection, position_name: str) -> Union[List[Candidate], None]:
+    def get_position(connection, position_name: str) -> Union[Position, None]:
         with connection as conn:
             c = conn.cursor()
             c.execute("SELECT * FROM tblSSGPosition WHERE name LIKE %(position_name)s", { "position_name": position_name + '%', })
@@ -159,25 +159,7 @@ class CandidateModel(ABCMeta):
             if not position_data:
                 return None
             
-            position = Position(*position_data)
-            c.execute("SELECT * FROM tblCandidate WHERE position=%(position_id)s", { "position_id": position.position_id, })
-            dataset = c.fetchall()
-
-            if not dataset:
-                return None
-            
-            candidates = []
-            for data in dataset:
-                rs_id, rs_lastname, rs_firstname, rs_middleInitial, rs_position, rs_affiliation = data
-
-                c.execute("SELECT * FROM tblParty WHERE id=%(id)s", { "id": rs_affiliation, })
-                affiliation = Party(*c.fetchone())
-
-                candidates_data = [rs_id, rs_lastname, rs_firstname, rs_middleInitial, position, affiliation]
-
-                candidates.append(Candidate(*candidates_data))
-
-            return candidates
+            return Position(*position_data)
         
     @staticmethod
     def get_candidate_by_id(connection, candidate_id) -> Union[Candidate, None]:
