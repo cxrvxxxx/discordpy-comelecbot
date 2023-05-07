@@ -285,35 +285,35 @@ class Canvasser(commands.Cog):
             color=discord.Color.gold(),
             description="Working directory cleared. Commands dependent on the working file will no longer function."
         ).set_footer(
-            text="Use '/loadfile' to load a working file."
+            text="Use 'loadfile' to load a working file."
         ))
 
-    @app_commands.command(name="loadfile", description="Load a working file for the bot to use")
-    async def loadfile(self, interaction: discord.Interaction) -> None:
-        required_role = interaction.guild.get_role(1096073463313219687)
-        if not required_role in interaction.user.roles:
-            await interaction.response.send_message("You are not authorized to use this command")
+    @commands.command()
+    async def loadfile(self, ctx: commands.Context) -> None:
+        required_role = ctx.guild.get_role(1096073463313219687)
+        if not required_role in ctx.author.roles:
+            await ctx.send("You are not authorized to use this command")
             return
         
-        if not interaction.message.attachments:
-            await interaction.response.send_message("Error: No attached file.")
+        if not ctx.message.attachments:
+            await ctx.send("Error: No attached file.")
             return
         
-        if len(interaction.message.attachments) > 1:
-            await interaction.response.send_message("Error: Too many files.")
+        if len(ctx.message.attachments) > 1:
+            await ctx.send("Error: Too many files.")
             return
         
-        file = interaction.message.attachments[0]
+        file = ctx.message.attachments[0]
         if not file.filename.endswith('.xlsx'):
-            await interaction.response.send_message("Error: Not an Excel file.")
+            await ctx.send("Error: Not an Excel file.")
             return
         
         if len(os.listdir(self.WORKDIR)) > 0:
-            await interaction.response.send_message("Error: Workfile already exists.")
+            await ctx.send("Error: Workfile already exists.")
             return
         
         await file.save(fr"{self.WORKDIR}/{file.filename}")   
-        await interaction.response.send_message("File saved!")
+        await ctx.send("File saved!")
 
     @commands.command()
     async def autovalidate(self, ctx: commands.Context) -> None:
