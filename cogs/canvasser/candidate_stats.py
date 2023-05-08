@@ -40,8 +40,8 @@ class CandidateStats(commands.Cog):
         query = """
         SELECT 
             c.id AS 'ID', 
-            CONCAT_WS(' ', c.firstname, NULLIF(c.middleInitial, ''), c.lastname) AS 'Name', 
-            p.name AS 'Party', 
+            CONCAT_WS(' ', LEFT(c.firstname, 1), NULLIF(c.middleInitial, ''), c.lastname) AS 'Name', 
+            LEFT(p.name, 1) AS 'Party', 
             COUNT(CASE WHEN t.isValid THEN 1 END) AS 'Valid Votes', 
             COUNT(CASE WHEN NOT t.isValid THEN 1 END) AS 'Invalid Votes', 
             pos.name AS 'Position' 
@@ -78,7 +78,7 @@ class CandidateStats(commands.Cog):
 
         embed = discord.Embed(
             color=discord.Color.gold(),
-            title="Elections 2023 Statistics",
+            title="CIT-U SSG General Elections 2023",
             description="Candidate name search"
         )
 
@@ -99,7 +99,71 @@ class CandidateStats(commands.Cog):
         LAST_UPDATE_DATETIME = datetime.fromtimestamp(os.path.getmtime(fr"{self.WORKDIR}/{os.listdir(self.WORKDIR)[0]}")).strftime('%m/%d/%Y %H:%M')
         embed.set_footer(text=f"As of {LAST_UPDATE_DATETIME}")
 
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed)
+
+    @app_commands.command(name='positioninfo', description="Show candidates running for a specific position")
+    @app_commands.describe(position_name="The position to search for")
+    async def positioninfo(self, interaction: discord.Interaction, position_name: str) -> None:       
+        position = CandidateModel.get_position(self.client.DB_POOL, position_name)
+        if not position:
+            await interaction.response.send_message(f"No position found matching '{position_name}'", ephemeral=True)
+            return
+        
+        query = """
+        SELECT 
+            c.id AS 'ID', 
+            CONCAT_WS(' ', LEFT(c.firstname, 1), NULLIF(c.middleInitial, ''), c.lastname) AS 'Name', 
+            LEFT(p.name, 1) AS 'Party', 
+            COUNT(CASE WHEN t.isValid THEN 1 END) AS 'Valid Votes', 
+            COUNT(CASE WHEN NOT t.isValid THEN 1 END) AS 'Invalid Votes'
+        FROM tblCandidate AS c 
+        JOIN tblParty AS p ON c.affiliation = p.id 
+        LEFT JOIN tblStudentVote AS v ON c.id = v.candidateId 
+        LEFT JOIN tblVote AS t ON v.voteId = t.id AND t.isValid IS NOT NULL
+        WHERE
+            c.position = %(positionId)s
+        GROUP BY 
+            c.id, 
+            c.lastname
+        ORDER BY
+            `Valid Votes` DESC
+        """
+
+        with self.client.DB_POOL as conn:
+            c = conn.cursor()
+            c.execute(query, { "positionId": position.position_id, })
+
+            dataset = c.fetchall()
+
+        content = ""
+        count = 1
+        for i in range(len(dataset)):
+            rs_id, rs_name, rs_party, rs_valid_count, rs_void_count = dataset[i]
+
+            if i != 0:
+                if dataset[i - 1][3] > rs_valid_count:
+                    count += 1
+
+            content += f"**#{count}** | ({rs_id}) {rs_name} [{rs_party}] \n"
+
+        embed = discord.Embed(
+            color=discord.Color.gold(),
+            title="CIT-U SSG General Elections 2023",
+            description="Position search"
+        )
+
+        embed.add_field(
+            name=f"{position.name} statistics",
+            value=content,
+            inline=False
+        )
+
+        embed.set_image(url="https://scontent.fceb3-1.fna.fbcdn.net/v/t39.30808-6/330836006_736551421144884_8269249174951218445_n.png?_nc_cat=102&ccb=1-7&_nc_sid=e3f864&_nc_eui2=AeHZBZ99StbsdLOml4D-razBJyqCl2kuENUnKoKXaS4Q1Xv44TTvciLS860w8x76OVfXnypEjHchNPiS5tEyZQFp&_nc_ohc=cEQMN75HmNwAX8B4Nse&_nc_ht=scontent.fceb3-1.fna&oh=00_AfBXE8cdx8GgAPS78ke79PsdAHXeGTae5KYChwd-Nox_Kw&oe=645C3D7A")
+        
+        LAST_UPDATE_DATETIME = datetime.fromtimestamp(os.path.getmtime(fr"{self.WORKDIR}/{os.listdir(self.WORKDIR)[0]}")).strftime('%m/%d/%Y %H:%M')
+        embed.set_footer(text=f"As of {LAST_UPDATE_DATETIME}")
+        
+        await interaction.response.send_message(embed=embed)
 
     # TODO: Fix issue: No response for party data exceeding (1024 characters in size)
     # @app_commands.command(name='partyinfo', description='Show candidates running under a specific party')
@@ -140,69 +204,3 @@ class CandidateStats(commands.Cog):
     #         )
 
     #     await interaction.response.send_message(embed=embed, ephemeral=True)
-
-    @app_commands.command(name='positioninfo', description="Show candidates running for a specific position")
-    @app_commands.describe(position_name="The position to search for")
-    async def positioninfo(self, interaction: discord.Interaction, position_name: str) -> None:       
-        position = CandidateModel.get_position(self.client.DB_POOL, position_name)
-        if not position:
-            await interaction.response.send_message(f"No position found matching '{position_name}'", ephemeral=True)
-            return
-        
-        query = """
-        SELECT 
-            c.id AS 'ID', 
-            CONCAT_WS(' ', c.firstname, NULLIF(c.middleInitial, ''), c.lastname) AS 'Name', 
-            p.name AS 'Party', 
-            COUNT(CASE WHEN t.isValid THEN 1 END) AS 'Valid Votes', 
-            COUNT(CASE WHEN NOT t.isValid THEN 1 END) AS 'Invalid Votes'
-        FROM 
-            tblCandidate AS c 
-            JOIN tblParty AS p ON c.affiliation = p.id 
-            JOIN tblStudentVote AS v ON c.id = v.candidateId 
-            JOIN tblVote AS t ON v.voteId = t.id 
-        WHERE
-            c.position = %(positionId)s
-        GROUP BY 
-            c.id, 
-            c.lastname
-        ORDER BY
-            `Valid Votes` DESC
-        """
-
-        with self.client.DB_POOL as conn:
-            c = conn.cursor()
-            c.execute(query, { "positionId": position.position_id, })
-
-            dataset = c.fetchall()
-
-        content = ""
-        count = 1
-        for i in range(len(dataset)):
-            rs_id, rs_name, rs_party, rs_valid_count, rs_void_count = dataset[i]
-
-            if i != 0:
-                if dataset[i - 1][3] > rs_valid_count:
-                    count += 1
-
-            stats = f'Votes: {rs_valid_count} valid, {rs_void_count} void'
-            content += f"**#{count}** | {stats:24} | ({rs_id}) {rs_name} [{rs_party}] \n"
-
-        embed = discord.Embed(
-            color=discord.Color.gold(),
-            title="Elections 2023 Statistics",
-            description="Candidates who did not garner at least one (1) vote may not appear in the list."
-        )
-
-        embed.add_field(
-            name=f"{position.name}",
-            value=content,
-            inline=False
-        )
-
-        embed.set_image(url="https://scontent.fceb3-1.fna.fbcdn.net/v/t39.30808-6/330836006_736551421144884_8269249174951218445_n.png?_nc_cat=102&ccb=1-7&_nc_sid=e3f864&_nc_eui2=AeHZBZ99StbsdLOml4D-razBJyqCl2kuENUnKoKXaS4Q1Xv44TTvciLS860w8x76OVfXnypEjHchNPiS5tEyZQFp&_nc_ohc=cEQMN75HmNwAX8B4Nse&_nc_ht=scontent.fceb3-1.fna&oh=00_AfBXE8cdx8GgAPS78ke79PsdAHXeGTae5KYChwd-Nox_Kw&oe=645C3D7A")
-        
-        LAST_UPDATE_DATETIME = datetime.fromtimestamp(os.path.getmtime(fr"{self.WORKDIR}/{os.listdir(self.WORKDIR)[0]}")).strftime('%m/%d/%Y %H:%M')
-        embed.set_footer(text=f"As of {LAST_UPDATE_DATETIME}")
-        
-        await interaction.response.send_message(embed=embed, ephemeral=True)
