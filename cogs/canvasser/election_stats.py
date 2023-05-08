@@ -9,6 +9,8 @@ import pandas as pd
 
 from core.bot import ComelecBot
 
+from .models.candidate_model import CandidateModel
+
 class ElectionStats(commands.Cog):
     def __init__(self, client: ComelecBot) -> None:
         self.client = client
@@ -52,22 +54,18 @@ class ElectionStats(commands.Cog):
             VOIDED_VOTE_COUNT = c.fetchone()[0]
 
         embed = discord.Embed(
-            title="Election 2023 Statistics",
+            title="CIT-U SSG General Elections 2023",
             color=discord.Color.gold()
         )
         embed.add_field(
             name="Candidate statistics",
-            value=f"""Total: {TOTAL}
-            EXECOM Canidates: {EXECOM_COUNT}
-            Representatives: {REP_COUNT}""",
+            value=f"Total: {TOTAL}\nEXECOM: {EXECOM_COUNT}\nRepresentatives: {REP_COUNT}\n\nUNITED: {UNITED_COUNT}\nSAVE: {SAVE_COUNT}\nINDEPENDENT: {INDEP_COUNT}",
             inline=False
         )
         
         embed.add_field(
-            name="Party Statistics",
-            value=f"""UNITED: {UNITED_COUNT}
-            SAVE: {SAVE_COUNT}
-            INDEPENDENT: {INDEP_COUNT}""",
+            name="Party statistics",
+            value=f"",
             inline=False
         )
 
