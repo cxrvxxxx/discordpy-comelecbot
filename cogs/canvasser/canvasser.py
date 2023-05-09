@@ -5,10 +5,13 @@ from time import time
 from typing import List, Union, Callable, Coroutine, Dict, Any
 import functools
 import asyncio
+from datetime import datetime
 
 import discord
 from discord import app_commands
 from discord.ext import commands
+
+from fpdf import FPDF
 
 from core.bot import ComelecBot
 
@@ -92,6 +95,63 @@ class Canvasser(commands.Cog):
         name = name.split('-')
         return name[0]
     
+    @to_thread
+    def dump_to_pdf(self, sql_query, output_file):
+        # Connect to SQLite database
+
+        LAST_UPDATE_DATETIME = datetime.fromtimestamp(os.path.getmtime(fr"{self.WORKDIR}/{os.listdir(self.WORKDIR)[0]}")).strftime('%m/%d/%Y %H:%M')
+
+        with self.client.DB_POOL as conn:
+            c = conn.cursor()
+            c.execute(sql_query)
+            results = c.fetchall()
+
+        # Create PDF document and set properties
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font('Arial', 'B', 12)
+
+        # Add text header above table
+        pdf.set_font('Arial', 'B', 12)
+        pdf.cell(0, 10, 'CIT-U SSG General Election Results', ln=1)
+
+        pdf.set_font('Arial', 'B', 9)
+        pdf.cell(0, 10, f'As of {LAST_UPDATE_DATETIME}', ln=1)
+
+        # Set table header row
+        header = ['Position', 'ID', 'Name', 'Party', 'Valid Votes', 'Invalid Votes']
+
+        # Calculate column widths based on header and data values
+        col_widths = [pdf.get_string_width(str(header[i]).strip()) + 2 for i in range(len(header))]
+        for row in results:
+            col_widths[0] = max(col_widths[0], pdf.get_string_width(str(row[0]).strip()) + 2)
+            col_widths[1] = max(col_widths[1], pdf.get_string_width(str(row[1]).strip()) + 2)
+            col_widths[2] = max(col_widths[2], pdf.get_string_width(str(row[2]).strip()) + 2)
+            col_widths[3] = max(col_widths[3], pdf.get_string_width(str(row[3]).strip()) + 2)
+            col_widths[4] = max(col_widths[4], pdf.get_string_width(str(row[4]).strip()) + 2)
+            col_widths[5] = max(col_widths[5], pdf.get_string_width(str(row[5]).strip()) + 2)
+
+        # Add header row to PDF document
+        pdf.ln()
+        pdf.set_font('Arial', 'B', 9)
+        for i in range(len(header)):
+            pdf.cell(col_widths[i], 6, str(header[i]).strip(), border=1)
+        pdf.ln()
+
+        # Loop through results and add to PDF document
+        pdf.set_font('Arial', '', 9)
+        for row in results:
+            pdf.cell(col_widths[0], 6, str(row[0]).strip(), border=1)
+            pdf.cell(col_widths[1], 6, str(row[1]).strip(), border=1)
+            pdf.cell(col_widths[2], 6, str(row[2]).strip(), border=1)
+            pdf.cell(col_widths[3], 6, str(row[3]).strip(), border=1)
+            pdf.cell(col_widths[4], 6, str(row[4]).strip(), border=1)
+            pdf.cell(col_widths[5], 6, str(row[5]).strip(), border=1)
+            pdf.ln()
+
+        # Save PDF document to file
+        pdf.output(output_file, 'F')
+
     @to_thread
     def process_votes(self) -> None:
         # Load file
@@ -493,3 +553,37 @@ class Canvasser(commands.Cog):
 
         await interaction.response.send_message(embed=embed)
 
+    @app_commands.command(name="electionresults", description="Retrieve election results")
+    async def electionresults(self, interaction: discord.Interaction) -> None:
+        query = """
+            SELECT 
+                pos.name AS 'Position',
+                c.id AS 'ID', 
+                CONCAT_WS(' ', CONCAT(c.lastname, ','), c.firstname, NULLIF(CONCAT(NULLIF(c.middleInitial, ''), '.'), '')) AS 'Name', 
+                p.name AS 'Party', 
+                COUNT(CASE WHEN t.isValid THEN 1 END) AS 'Valid Votes', 
+                COUNT(CASE WHEN NOT t.isValid THEN 1 END) AS 'Invalid Votes'
+            FROM tblCandidate AS c 
+            JOIN tblSSGPosition as pos ON c.position = pos.id
+            JOIN tblParty AS p ON c.affiliation = p.id 
+            LEFT JOIN tblStudentVote AS v ON c.id = v.candidateId 
+            LEFT JOIN tblVote AS t ON v.voteId = t.id AND t.isValid IS NOT NULL
+            GROUP BY 
+                c.id, 
+                c.lastname
+            ORDER BY
+                c.position,
+                `Valid Votes`
+            DESC
+        """
+
+        await self.dump_to_pdf(query,"CITUGeneralElections2023Results.pdf")
+
+        with open("CITUGeneralElections2023Results.pdf", 'rb') as f:
+            file = discord.File(f)
+
+            await interaction.response.send_message(embed=discord.Embed(
+                color=discord.Color.gold(),
+                title="Election results 2023",
+                description="See attached file."
+            ), file=file)

@@ -25,10 +25,11 @@ class ElectionStats(commands.Cog):
 
         LAST_UPDATE_DATETIME = datetime.fromtimestamp(os.path.getmtime(fr"{self.WORKDIR}/{os.listdir(self.WORKDIR)[0]}")).strftime('%m/%d/%Y %H:%M')
 
-        TOTAL_VOTES = df.shape[0]
-
         with self.client.DB_POOL as conn:
             c = conn.cursor()
+
+            c.execute("SELECT COUNT(id) FROM tblVote")
+            TOTAL_VOTES = c.fetchone()[0]
 
             c.execute("SELECT COUNT(id) FROM tblCandidate WHERE id<6")
             EXECOM_COUNT = c.fetchone()[0]
@@ -41,6 +42,30 @@ class ElectionStats(commands.Cog):
             c.execute("SELECT COUNT(id) FROM tblCandidate WHERE affiliation=1")
             UNITED_COUNT = c.fetchone()[0]
 
+            c.execute("SELECT COUNT(tblStudentVote.id) FROM tblStudentVote LEFT JOIN tblCandidate ON tblStudentVote.candidateId=tblCandidate.id LEFT JOIN tblVote ON tblStudentVote.voteId=tblVote.id WHERE tblCandidate.affiliation=1 AND tblVote.isValid=1")
+            UNITED_VALID_COUNT = c.fetchone()[0]
+
+            c.execute("SELECT COUNT(tblStudentVote.id) FROM tblStudentVote LEFT JOIN tblCandidate ON tblStudentVote.candidateId=tblCandidate.id LEFT JOIN tblVote ON tblStudentVote.voteId=tblVote.id WHERE tblCandidate.affiliation=1 AND tblVote.isValid=0")
+            UNITED_VOID_COUNT = c.fetchone()[0]
+
+            UNITED_TOTAL_VOTE = UNITED_VALID_COUNT + UNITED_VOID_COUNT
+
+            c.execute("SELECT COUNT(tblStudentVote.id) FROM tblStudentVote LEFT JOIN tblCandidate ON tblStudentVote.candidateId=tblCandidate.id LEFT JOIN tblVote ON tblStudentVote.voteId=tblVote.id WHERE tblCandidate.affiliation=2 AND tblVote.isValid=1")
+            SAVE_VALID_COUNT = c.fetchone()[0]
+
+            c.execute("SELECT COUNT(tblStudentVote.id) FROM tblStudentVote LEFT JOIN tblCandidate ON tblStudentVote.candidateId=tblCandidate.id LEFT JOIN tblVote ON tblStudentVote.voteId=tblVote.id WHERE tblCandidate.affiliation=2 AND tblVote.isValid=0")
+            SAVE_VOID_COUNT = c.fetchone()[0]
+
+            SAVE_TOTAL_VOTE = SAVE_VALID_COUNT + SAVE_VOID_COUNT
+
+            c.execute("SELECT COUNT(tblStudentVote.id) FROM tblStudentVote LEFT JOIN tblCandidate ON tblStudentVote.candidateId=tblCandidate.id LEFT JOIN tblVote ON tblStudentVote.voteId=tblVote.id WHERE tblCandidate.affiliation=3 AND tblVote.isValid=1")
+            INDEP_VALID_COUNT = c.fetchone()[0]
+
+            c.execute("SELECT COUNT(tblStudentVote.id) FROM tblStudentVote LEFT JOIN tblCandidate ON tblStudentVote.candidateId=tblCandidate.id LEFT JOIN tblVote ON tblStudentVote.voteId=tblVote.id WHERE tblCandidate.affiliation=3 AND tblVote.isValid=0")
+            INDEP_VOID_COUNT = c.fetchone()[0]
+
+            INDEP_TOTAL_VOTE = INDEP_VALID_COUNT + INDEP_VOID_COUNT
+            
             c.execute("SELECT COUNT(id) FROM tblCandidate WHERE affiliation=2")
             SAVE_COUNT = c.fetchone()[0]
 
@@ -53,27 +78,52 @@ class ElectionStats(commands.Cog):
             c.execute("SELECT COUNT(id) FROM tblVote WHERE isValid=0")
             VOIDED_VOTE_COUNT = c.fetchone()[0]
 
+            c.execute("SELECT COUNT(id) FROM tblStudentVote")
+            TOTAL_CANDIDATE_VOTES = c.fetchone()[0]
+
+            c.execute("SELECT reason, COUNT(reason) FROM tblVote WHERE reason NOT LIKE '' GROUP BY reason")
+            TOP_VOID_REASONS = c.fetchall()
+
         embed = discord.Embed(
             title="CIT-U SSG General Elections 2023",
             color=discord.Color.gold()
         )
         embed.add_field(
             name="Candidate statistics",
-            value=f"Total: {TOTAL}\nEXECOM: {EXECOM_COUNT}\nRepresentatives: {REP_COUNT}\n\nUNITED: {UNITED_COUNT}\nSAVE: {SAVE_COUNT}\nINDEPENDENT: {INDEP_COUNT}",
+            value=f"Out of **`{TOTAL}`** candidates,\n**`{EXECOM_COUNT}`** of which are **EXECOM**.\n**`{REP_COUNT}`** of which are from **REPRESENTATIVES**.",
             inline=False
         )
         
         embed.add_field(
             name="Party statistics",
-            value=f"",
+            value=f"Out of **`{TOTAL}`** candidates,\n**`{UNITED_COUNT}`** of which are from **UNITED**.\n**`{SAVE_COUNT}`** of which are from **SAVE**.\n**`{INDEP_COUNT}`** of which are **INDEPENDENT**.",
             inline=False
         )
 
         embed.add_field(
-            name="Polling statistics",
-            value=f"""Total votes: {TOTAL_VOTES}
-            Validated votes: {VALIDATED_VOTE_COUNT}
-            Voided votes: {VOIDED_VOTE_COUNT}""",
+            name="Polling statistics (overall)",
+            value=f"Out of **`{TOTAL_VOTES}`** votes,\n**`{VALIDATED_VOTE_COUNT}`** valid.\n**`{VOIDED_VOTE_COUNT}`** void.",
+            inline=False
+        )
+
+        embed.add_field(
+            name="Polling statistics (per-candidate)",
+            value=f"Out of **`{TOTAL_CANDIDATE_VOTES}`** candidate votes,\n**`{UNITED_VALID_COUNT+SAVE_VALID_COUNT+INDEP_VALID_COUNT}`** valid.\n**`{UNITED_VOID_COUNT+SAVE_VOID_COUNT+INDEP_VOID_COUNT}`** void.\n",
+            inline=False
+        )
+
+        embed.add_field(
+            name="Polling statistics (per-party)",
+            value=f"Out of **`{TOTAL_CANDIDATE_VOTES}`** candidate votes,\n**`{UNITED_TOTAL_VOTE}`** for **UNITED**.\n**`{UNITED_VALID_COUNT}`** valid. **`{UNITED_VOID_COUNT}`** void.\n**`{SAVE_TOTAL_VOTE}`** for **SAVE**.\n**`{SAVE_VALID_COUNT}`** valid, **`{SAVE_VOID_COUNT}`** void.\n**`{INDEP_TOTAL_VOTE}`** for **INDEPENDENT**.\n**`{INDEP_VALID_COUNT}`** valid, **`{INDEP_VOID_COUNT}`** void."
+        )
+
+        void_reasons = ""
+        for reason in TOP_VOID_REASONS:
+            void_reasons += f"`{reason[1]}` voided vote(s) for reason: `{reason[0].strip()}'\n"
+
+        embed.add_field(
+            name="Top reason(s) for voided votes",
+            value=void_reasons,
             inline=False
         )
 
