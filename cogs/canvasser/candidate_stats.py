@@ -47,10 +47,10 @@ class CandidateStats(commands.Cog):
             pos.name AS 'Position' 
         FROM 
             tblCandidate AS c 
-            JOIN tblParty AS p ON c.affiliation = p.id 
-            JOIN tblSSGPosition AS pos ON c.position = pos.id 
-            JOIN tblStudentVote AS v ON c.id = v.candidateId 
-            JOIN tblVote AS t ON v.voteId = t.id 
+            LEFT JOIN tblParty AS p ON c.affiliation = p.id 
+            LEFT JOIN tblSSGPosition AS pos ON c.position = pos.id 
+            LEFT JOIN tblStudentVote AS v ON c.id = v.candidateId 
+            LEFT JOIN tblVote AS t ON v.voteId = t.id 
         WHERE
             c.id = %(candidateId)s
         GROUP BY 
@@ -112,7 +112,7 @@ class CandidateStats(commands.Cog):
         query = """
         SELECT 
             c.id AS 'ID', 
-            CONCAT_WS(' ', LEFT(c.firstname, 1), NULLIF(c.middleInitial, ''), c.lastname) AS 'Name', 
+            CONCAT_WS(' ', CONCAT(LEFT(c.firstname, 1), '.'), c.lastname) AS 'Name', 
             LEFT(p.name, 1) AS 'Party', 
             COUNT(CASE WHEN t.isValid THEN 1 END) AS 'Valid Votes', 
             COUNT(CASE WHEN NOT t.isValid THEN 1 END) AS 'Invalid Votes'
@@ -144,7 +144,7 @@ class CandidateStats(commands.Cog):
                 if dataset[i - 1][3] > rs_valid_count:
                     count += 1
 
-            content += f"**#{count}** | ({rs_id}) {rs_name} [{rs_party}] \n"
+            content += f"**#{count}** | {rs_valid_count} | ({rs_id}) {rs_name} [{rs_party}] \n"
 
         embed = discord.Embed(
             color=discord.Color.gold(),

@@ -19,11 +19,10 @@ class ElectionStats(commands.Cog):
 
     @app_commands.command(name='stats', description='Show an overview of the current elections')
     async def stats(self, interaction: discord.Interaction) -> None:
-        df = pd.read_excel(fr"{self.WORKDIR}/{os.listdir(self.WORKDIR)[0]}", header=0)
-        df = df.fillna('None')
-        df = df.astype("object")
-
-        LAST_UPDATE_DATETIME = datetime.fromtimestamp(os.path.getmtime(fr"{self.WORKDIR}/{os.listdir(self.WORKDIR)[0]}")).strftime('%m/%d/%Y %H:%M')
+        try:
+            LAST_UPDATE_DATETIME = datetime.fromtimestamp(os.path.getmtime(fr"{self.WORKDIR}/{os.listdir(self.WORKDIR)[0]}")).strftime('%m/%d/%Y %H:%M')
+        except Exception:
+            LAST_UPDATE_DATETIME = "No file uploaded."
 
         with self.client.DB_POOL as conn:
             c = conn.cursor()
