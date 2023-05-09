@@ -8,4 +8,6 @@ __pycache__/
 logs/
 *.log
 
+*.pdf
+
 db_settings.json
