@@ -517,6 +517,11 @@ class Canvasser(commands.Cog):
     @app_commands.command(name="getvoided", description="List all voided votes")
     @app_commands.describe(offset="Offset the list by specified amount")
     async def getvoided(self, interaction: discord.Interaction, offset: int=0) -> None:
+        required_role = interaction.guild.get_role(1096073463313219687)
+        if not required_role in interaction.user.roles:
+            await interaction.response.send_message("You are not authorized to use this command")
+            return
+        
         with self.client.DB_POOL as conn:
             c = conn.cursor()
 
@@ -555,6 +560,11 @@ class Canvasser(commands.Cog):
 
     @app_commands.command(name="electionresults", description="Retrieve election results")
     async def electionresults(self, interaction: discord.Interaction) -> None:
+        required_role = interaction.guild.get_role(1096073463313219687)
+        if not required_role in interaction.user.roles:
+            await interaction.response.send_message("You are not authorized to use this command")
+            return
+        
         query = """
             SELECT 
                 pos.name AS 'Position',
