@@ -71,7 +71,7 @@ class ElectionStats(commands.Cog):
             c.execute("SELECT COUNT(id) FROM tblCandidate WHERE affiliation=3")
             INDEP_COUNT = c.fetchone()[0]
 
-            c.execute("SELECT COUNT(id) FROM tblVote")
+            c.execute("SELECT COUNT(id) FROM tblVote WHERE isValid=1")
             VALIDATED_VOTE_COUNT = c.fetchone()[0]
 
             c.execute("SELECT COUNT(id) FROM tblVote WHERE isValid=0")
@@ -118,10 +118,10 @@ class ElectionStats(commands.Cog):
 
         void_reasons = ""
         for reason in TOP_VOID_REASONS:
-            void_reasons += f"`{reason[1]}` voided vote(s) for reason: `{reason[0].strip()}'\n"
+            void_reasons += f"**{reason[1]}** voided vote(s) for reason: **{reason[0].strip()}**\n"
 
         embed.add_field(
-            name="Top reason(s) for voided votes",
+            name="Top reason(s) for voided votes:",
             value=void_reasons,
             inline=False
         )
