@@ -39,12 +39,12 @@ class CandidateStats(commands.Cog):
         
         query = """
         SELECT 
-            c.id AS 'ID', 
-            CONCAT_WS(' ', LEFT(c.firstname, 1), NULLIF(c.middleInitial, ''), c.lastname) AS 'Name', 
-            LEFT(p.name, 1) AS 'Party', 
-            CONCAT(FORMAT((COUNT(CASE WHEN t.isValid THEN 1 END) / COUNT(v.id)) * 100, 2), '%') AS 'Valid Votes %',
-            CONCAT(FORMAT((COUNT(CASE WHEN NOT t.isValid THEN 1 END) / COUNT(v.id)) * 100, 2), '%') AS 'Invalid Votes %',
-            pos.name AS 'Position'
+            c.id AS `ID`, 
+            CONCAT_WS(' ', LEFT(c.firstname, 1), NULLIF(c.middleInitial, ''), c.lastname) AS `Name`, 
+            LEFT(p.name, 1) AS `Party`, 
+            CONCAT(FORMAT((COUNT(CASE WHEN t.isValid THEN 1 END) / COUNT(v.id)) * 100, 2), '%') AS `Valid Votes %`,
+            CONCAT(FORMAT((COUNT(CASE WHEN NOT t.isValid THEN 1 END) / COUNT(v.id)) * 100, 2), '%') AS `Invalid Votes %`,
+            pos.name AS `Position`
         FROM 
             tblCandidate AS c 
             LEFT JOIN tblParty AS p ON c.affiliation = p.id 
@@ -119,7 +119,7 @@ class CandidateStats(commands.Cog):
             CONCAT_WS(' ', CONCAT(LEFT(c.firstname, 1), '.'), c.lastname) AS 'Name', 
             LEFT(p.name, 1) AS 'Party', 
             CONCAT(FORMAT((COUNT(CASE WHEN t.isValid THEN 1 END) / COUNT(v.id)) * 100, 2), '%') AS 'Valid Votes %',
-            CONCAT(FORMAT((COUNT(CASE WHEN NOT t.isValid THEN 1 END) / COUNT(v.id)) * 100, 2), '%') AS 'Invalid Votes %''
+            CONCAT(FORMAT((COUNT(CASE WHEN NOT t.isValid THEN 1 END) / COUNT(v.id)) * 100, 2), '%') AS 'Invalid Votes %'
         FROM tblCandidate AS c 
         JOIN tblParty AS p ON c.affiliation = p.id 
         LEFT JOIN tblStudentVote AS v ON c.id = v.candidateId 
