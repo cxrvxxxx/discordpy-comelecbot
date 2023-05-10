@@ -42,9 +42,9 @@ class CandidateStats(commands.Cog):
             c.id AS 'ID', 
             CONCAT_WS(' ', LEFT(c.firstname, 1), NULLIF(c.middleInitial, ''), c.lastname) AS 'Name', 
             LEFT(p.name, 1) AS 'Party', 
-            COUNT(CASE WHEN t.isValid THEN 1 END) AS 'Valid Votes', 
-            COUNT(CASE WHEN NOT t.isValid THEN 1 END) AS 'Invalid Votes', 
-            pos.name AS 'Position' 
+            CONCAT(FORMAT((COUNT(CASE WHEN t.isValid THEN 1 END) / COUNT(v.id)) * 100, 2), '%') AS 'Valid Votes %',
+            CONCAT(FORMAT((COUNT(CASE WHEN NOT t.isValid THEN 1 END) / COUNT(v.id)) * 100, 2), '%') AS 'Invalid Votes %',
+            pos.name AS 'Position'
         FROM 
             tblCandidate AS c 
             LEFT JOIN tblParty AS p ON c.affiliation = p.id 
@@ -57,7 +57,7 @@ class CandidateStats(commands.Cog):
             c.id, 
             c.lastname, 
             pos.name, 
-            p.name 
+            p.name
         """
 
         with self.client.DB_POOL as conn:
@@ -90,7 +90,7 @@ class CandidateStats(commands.Cog):
 
         embed.add_field(
             name="Polling statistics",
-            value=f"Total votes: {rs_valid_count + rs_void_count}\nValid votes: {rs_valid_count}\nVoided votes: {rs_void_count}",
+            value=f"Valid votes: {rs_valid_count}\nVoided votes: {rs_void_count}",
             inline=False
         )
 
@@ -118,8 +118,8 @@ class CandidateStats(commands.Cog):
             c.id AS 'ID', 
             CONCAT_WS(' ', CONCAT(LEFT(c.firstname, 1), '.'), c.lastname) AS 'Name', 
             LEFT(p.name, 1) AS 'Party', 
-            COUNT(CASE WHEN t.isValid THEN 1 END) AS 'Valid Votes', 
-            COUNT(CASE WHEN NOT t.isValid THEN 1 END) AS 'Invalid Votes'
+            CONCAT(FORMAT((COUNT(CASE WHEN t.isValid THEN 1 END) / COUNT(v.id)) * 100, 2), '%') AS 'Valid Votes %',
+            CONCAT(FORMAT((COUNT(CASE WHEN NOT t.isValid THEN 1 END) / COUNT(v.id)) * 100, 2), '%') AS 'Invalid Votes %''
         FROM tblCandidate AS c 
         JOIN tblParty AS p ON c.affiliation = p.id 
         LEFT JOIN tblStudentVote AS v ON c.id = v.candidateId 
