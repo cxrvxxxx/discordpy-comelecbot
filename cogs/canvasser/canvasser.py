@@ -160,12 +160,22 @@ class Canvasser(commands.Cog):
 
         pdf.set_font('Arial', 'B', 9)
         pdf.cell(0, 10, f'Total votes: {TOTAL_VOTES}', ln=1)
+        pdf.ln()
 
         pdf.set_font('Arial', 'B', 9)
         pdf.cell(0, 10, f'Votes Voided: {VOIDED_COUNT}', ln=1)
+        pdf.ln()
 
         pdf.set_font('Arial', 'B', 9)
-        pdf.cell(0, 10, "Top reasons for voided votes:\n".join([f"{count} voided due to: {reason}\n" for count, reason in TOP_REASONS]), ln=1)
+        pdf.cell(0, 10, "Top reasons for voided votes", ln=1)
+        pdf.ln()
+
+        for x in TOP_REASONS:
+            reason, count = x
+
+            pdf.set_font('Aria', '8', 9)
+            pdf.cell(0, 10, f"{count} voided due to: {reason}")
+            pdf.ln()
 
         # Save PDF document to file
         pdf.output(output_file, 'F')
