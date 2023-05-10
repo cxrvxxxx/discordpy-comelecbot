@@ -106,6 +106,15 @@ class Canvasser(commands.Cog):
             c.execute(sql_query)
             results = c.fetchall()
 
+            c.execute("SELECT COUNT(id) FROM tblVote WHERE")
+            TOTAL_VOTES = c.fetchone()[0]
+
+            c.execute("SELECT COUNT(id) FROM tblVote WHERE isValid=0")
+            VOIDED_COUNT = c.fetchone()[0]
+
+            c.execute("SELECT reason, COUNT(reason) FROM tblVote WHERE reason NOT LIKE '' GROUP BY reason")
+            TOP_REASONS = c.fetchall()
+
         # Create PDF document and set properties
         pdf = FPDF()
         pdf.add_page()
@@ -148,6 +157,15 @@ class Canvasser(commands.Cog):
             pdf.cell(col_widths[4], 6, str(row[4]).strip(), border=1)
             pdf.cell(col_widths[5], 6, str(row[5]).strip(), border=1)
             pdf.ln()
+
+        pdf.set_font('Arial', 'B', 9)
+        pdf.cell(0, 10, f'Total votes: {TOTAL_VOTES}', ln=1)
+
+        pdf.set_font('Arial', 'B', 9)
+        pdf.cell(0, 10, f'Votes Voided: {VOIDED_COUNT}', ln=1)
+
+        pdf.set_font('Arial', 'B', 9)
+        pdf.cell(0, 10, "Top reasons for voided votes:\n".join([f"{count} voided due to: {reason}\n" for count, reason in TOP_REASONS]), ln=1)
 
         # Save PDF document to file
         pdf.output(output_file, 'F')
