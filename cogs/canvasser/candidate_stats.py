@@ -130,7 +130,7 @@ class CandidateStats(commands.Cog):
             c.id, 
             c.lastname
         ORDER BY
-            `Valid Votes` DESC
+            `Valid Votes %` DESC
         """
 
         with self.client.DB_POOL as conn:
