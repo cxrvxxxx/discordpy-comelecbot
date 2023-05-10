@@ -554,7 +554,7 @@ class Canvasser(commands.Cog):
         embed.set_image(url="https://scontent.fceb3-1.fna.fbcdn.net/v/t39.30808-6/330836006_736551421144884_8269249174951218445_n.png?_nc_cat=102&ccb=1-7&_nc_sid=e3f864&_nc_eui2=AeHZBZ99StbsdLOml4D-razBJyqCl2kuENUnKoKXaS4Q1Xv44TTvciLS860w8x76OVfXnypEjHchNPiS5tEyZQFp&_nc_ohc=cEQMN75HmNwAX8B4Nse&_nc_ht=scontent.fceb3-1.fna&oh=00_AfBXE8cdx8GgAPS78ke79PsdAHXeGTae5KYChwd-Nox_Kw&oe=645C3D7A")
 
         if COUNT > 20:
-            embed.add_footer(text="Specify an offset to see the voided votes 21st and above")
+            embed.set_footer(text="Specify an offset to see the voided votes 21st and above")
 
         await interaction.response.send_message(embed=embed)
 
