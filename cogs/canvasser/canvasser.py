@@ -106,7 +106,7 @@ class Canvasser(commands.Cog):
             c.execute(sql_query)
             results = c.fetchall()
 
-            c.execute("SELECT COUNT(id) FROM tblVote WHERE")
+            c.execute("SELECT COUNT(id) FROM tblVote")
             TOTAL_VOTES = c.fetchone()[0]
 
             c.execute("SELECT COUNT(id) FROM tblVote WHERE isValid=0")
