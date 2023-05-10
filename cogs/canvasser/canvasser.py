@@ -173,7 +173,7 @@ class Canvasser(commands.Cog):
         for x in TOP_REASONS:
             reason, count = x
 
-            pdf.set_font('Arial', '8', 9)
+            pdf.set_font('Arial', 'B', 9)
             pdf.cell(0, 10, f"{count} voided due to: {reason}")
             pdf.ln()
 
