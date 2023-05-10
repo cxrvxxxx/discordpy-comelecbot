@@ -148,7 +148,7 @@ class CandidateStats(commands.Cog):
                 if dataset[i - 1][3] > rs_valid_count:
                     count += 1
 
-            content += f"**#{count}** | {rs_valid_count} | ({rs_id}) {rs_name} [{rs_party}] \n"
+            content += f"**#{count}** | ({rs_id}) {rs_name} [{rs_party}] \n"
 
         embed = discord.Embed(
             color=discord.Color.gold(),
