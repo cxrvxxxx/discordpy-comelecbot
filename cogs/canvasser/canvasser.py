@@ -286,13 +286,17 @@ class Canvasser(commands.Cog):
                         }
                     )
                 # Process candidates
+#                 selected_row = df.loc[
+#                     index,
+#                     [
+#                         "President", "Vice President", "Secretary General", "Treasurer General", "Auditor General",
+#                         "CASE Rep", "CNAHS Rep", "CMBA Rep", "ARCH Rep", "CE Rep", "CHE Rep", "CPE Rep",
+#                         "ECE Rep", "EE Rep", "EM Rep", "IE Rep", "ME Rep", "CS Rep", "IT Rep", "CRIM Rep"
+#                     ]
+#                 ]
                 selected_row = df.loc[
                     index,
-                    [
-                        "President", "Vice President", "Secretary General", "Treasurer General", "Auditor General",
-                        "CASE Rep", "CNAHS Rep", "CMBA Rep", "ARCH Rep", "CE Rep", "CHE Rep", "CPE Rep",
-                        "ECE Rep", "EE Rep", "EM Rep", "IE Rep", "ME Rep", "CS Rep", "IT Rep", "CRIM Rep"
-                    ]
+                    ["IT Rep"]
                 ]
 
                 # Loop through voted candidates
